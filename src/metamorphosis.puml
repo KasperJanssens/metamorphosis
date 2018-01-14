@@ -1,0 +1,49 @@
+@startuml
+actor -> Kafka: main
+Kafka -> Kafka: getPropsFromArgs
+Kafka --> Kafka: serverProps
+Kafka -> KafkaServerStartable: fromProps(serverProps)
+KafkaServerStartable -> KafkaServer:ctor
+activate KafkaServer
+activate KafkaServerStartable
+Kafka -> KafkaServerStartable: startup ()
+KafkaServerStartable -> KafkaServer: startup ()
+KafkaServer -> BrokerState: newState(BrokerStates.Starting)
+KafkaServer -> KafkaScheduler : startup ()
+KafkaServer -> KafkaServer : initZkClient
+note left
+  init the zookeeper client
+end note
+KafkaServer -> KafkaServer:createReplicaManager
+KafkaServer -> ReplicaManager: startup ()
+activate ReplicaManager
+note over ReplicaManager
+  This is the replica stuff
+end note
+KafkaServer -> KafkaController : startup ()
+activate KafkaController
+KafkaServer -> AdminManager : startup ()
+activate AdminManager
+KafkaServer -> GroupCoordinator : startup ()
+activate GroupCoordinator
+KafkaServer -> TransactionCoordinator : startup ()
+activate TransactionCoordinator
+KafkaServer -> KafkaApis:ctor
+note left
+  start processing requests
+end note
+activate KafkaApis
+KafkaServer -> KafkaRequestHandlerPool : ctor
+activate KafkaRequestHandlerPool
+KafkaServer -> BrokerState: newState (BrokerStates.RunningAsBroker)
+Kafka -> KafkaServerStartable: awaitShutDown ()
+deactivate KafkaRequestHandlerPool
+deactivate TransactionCoordinator
+deactivate GroupCoordinator
+deactivate AdminManager
+deactivate ReplicaManager
+deactivate KafkaController
+deactivate KafkaApis
+deactivate KafkaServerStartable
+deactivate KafkaServer
+@enduml
